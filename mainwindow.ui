@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>851</width>
+    <height>446</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="main.qrc">
+    <normaloff>:/pics/utilities-file-archiver.png</normaloff>:/pics/utilities-file-archiver.png</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <property name="spacing">
+     <number>1</number>
+    </property>
+    <property name="leftMargin">
+     <number>1</number>
+    </property>
+    <property name="topMargin">
+     <number>1</number>
+    </property>
+    <property name="rightMargin">
+     <number>1</number>
+    </property>
+    <property name="bottomMargin">
+     <number>1</number>
+    </property>
+    <item>
+     <widget class="QSplitter" name="mainSplitter">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="WaitView" name="progressWidget" native="true"/>
+      <widget class="QSplitter" name="splitter">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <widget class="DirTreeView" name="dirView">
+        <property name="dragEnabled">
+         <bool>false</bool>
+        </property>
+        <property name="dragDropMode">
+         <enum>QAbstractItemView::DragDrop</enum>
+        </property>
+        <property name="defaultDropAction">
+         <enum>Qt::CopyAction</enum>
+        </property>
+       </widget>
+       <widget class="DirContentsTreeView" name="filesView">
+        <property name="dragEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="dragDropMode">
+         <enum>QAbstractItemView::DragDrop</enum>
+        </property>
+        <property name="defaultDropAction">
+         <enum>Qt::CopyAction</enum>
+        </property>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>851</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuAcrchive">
+    <property name="title">
+     <string>Archive</string>
+    </property>
+    <addaction name="actionCreateNewArchive"/>
+    <addaction name="actionOpenArchive"/>
+    <addaction name="actionSave_as"/>
+    <addaction name="separator"/>
+    <addaction name="actionCheck_integrity"/>
+    <addaction name="actionProperties"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuActions">
+    <property name="title">
+     <string>Actions</string>
+    </property>
+    <addaction name="actionAppendFiles"/>
+    <addaction name="actionExtractFiles"/>
+    <addaction name="actionDelete_files"/>
+    <addaction name="separator"/>
+    <addaction name="actionSelect_all"/>
+    <addaction name="actionSelect_by_template"/>
+    <addaction name="separator"/>
+    <addaction name="actionSettings"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuAcrchive"/>
+   <addaction name="menuActions"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="StatusBar" name="statusBar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionCreateNewArchive"/>
+   <addaction name="actionOpenArchive"/>
+   <addaction name="separator"/>
+   <addaction name="actionGo_previous"/>
+   <addaction name="actionGo_up"/>
+   <addaction name="actionGo_next"/>
+   <addaction name="actionGo_home"/>
+   <addaction name="separator"/>
+   <addaction name="actionAppendFiles"/>
+   <addaction name="actionDelete_files"/>
+   <addaction name="actionExtractFiles"/>
+  </widget>
+  <action name="actionDelete_files">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/archive-remove.png</normaloff>:/pics/archive-remove.png</iconset>
+   </property>
+   <property name="text">
+    <string>Delete</string>
+   </property>
+   <property name="toolTip">
+    <string>Deletes the selected files</string>
+   </property>
+   <property name="statusTip">
+    <string>Deletes the selected files</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="actionAppendFiles">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/archive-insert.png</normaloff>:/pics/archive-insert.png</iconset>
+   </property>
+   <property name="text">
+    <string>Append...</string>
+   </property>
+   <property name="toolTip">
+    <string>Appends the local files or directories</string>
+   </property>
+   <property name="statusTip">
+    <string>Appends the local files or directories</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionExtractFiles">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/archive-extract.png</normaloff>:/pics/archive-extract.png</iconset>
+   </property>
+   <property name="text">
+    <string>Extract...</string>
+   </property>
+   <property name="toolTip">
+    <string>Extracts the selected files or directories to the defined location</string>
+   </property>
+   <property name="statusTip">
+    <string>Extracts the selected files or directories to the defined location</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="actionCreateNewArchive">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/document-new.png</normaloff>:/pics/document-new.png</iconset>
+   </property>
+   <property name="text">
+    <string>Create new...</string>
+   </property>
+   <property name="toolTip">
+    <string>Creates the new archive on the storage</string>
+   </property>
+   <property name="statusTip">
+    <string>Creates the new archive on the storage</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionOpenArchive">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/document-open.png</normaloff>:/pics/document-open.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open...</string>
+   </property>
+   <property name="toolTip">
+    <string>Opens the archive from the storage</string>
+   </property>
+   <property name="statusTip">
+    <string>Opens the archive from the storage</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSave_as">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/document-save-as.png</normaloff>:/pics/document-save-as.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save as...</string>
+   </property>
+   <property name="toolTip">
+    <string>Saves archive as any supported format</string>
+   </property>
+   <property name="statusTip">
+    <string>Saves archive as any supported format</string>
+   </property>
+  </action>
+  <action name="actionCheck_integrity">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/document-preview-archive.png</normaloff>:/pics/document-preview-archive.png</iconset>
+   </property>
+   <property name="text">
+    <string>Check integrity</string>
+   </property>
+   <property name="toolTip">
+    <string>Check integrity of opened archive</string>
+   </property>
+   <property name="statusTip">
+    <string>Check integrity of opened archive</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
+   </property>
+  </action>
+  <action name="actionProperties">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/document-properties.png</normaloff>:/pics/document-properties.png</iconset>
+   </property>
+   <property name="text">
+    <string>Properties...</string>
+   </property>
+   <property name="toolTip">
+    <string>Shows properties of opened archive</string>
+   </property>
+   <property name="statusTip">
+    <string>Shows properties of opened archive</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/application-exit.png</normaloff>:/pics/application-exit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="toolTip">
+    <string>Quit from the application</string>
+   </property>
+   <property name="statusTip">
+    <string>Quit from the application</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionSelect_all">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/edit-select-all.png</normaloff>:/pics/edit-select-all.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select all</string>
+   </property>
+   <property name="toolTip">
+    <string>Select all items of archive</string>
+   </property>
+   <property name="statusTip">
+    <string>Select all items of archive</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="actionSelect_by_template">
+   <property name="text">
+    <string>Select by template...</string>
+   </property>
+   <property name="toolTip">
+    <string>Select the items by template</string>
+   </property>
+   <property name="statusTip">
+    <string>Select the items by template</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/configure.png</normaloff>:/pics/configure.png</iconset>
+   </property>
+   <property name="text">
+    <string>Settings...</string>
+   </property>
+   <property name="toolTip">
+    <string>Show a window with program's settings</string>
+   </property>
+   <property name="statusTip">
+    <string>Show a window with program's settings</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About...</string>
+   </property>
+   <property name="toolTip">
+    <string>Shows informtion about program</string>
+   </property>
+   <property name="statusTip">
+    <string>Shows informtion about program</string>
+   </property>
+  </action>
+  <action name="actionGo_previous">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/go-previous.png</normaloff>:/pics/go-previous.png</iconset>
+   </property>
+   <property name="text">
+    <string>Go previous</string>
+   </property>
+   <property name="toolTip">
+    <string>Shows previous directory contents</string>
+   </property>
+   <property name="statusTip">
+    <string>Shows previous directory contents</string>
+   </property>
+   <property name="shortcut">
+    <string>Left</string>
+   </property>
+  </action>
+  <action name="actionGo_next">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/go-next.png</normaloff>:/pics/go-next.png</iconset>
+   </property>
+   <property name="text">
+    <string>Go next</string>
+   </property>
+   <property name="toolTip">
+    <string>Shows next directory contents</string>
+   </property>
+   <property name="statusTip">
+    <string>Shows next directory contents</string>
+   </property>
+   <property name="shortcut">
+    <string>Right</string>
+   </property>
+  </action>
+  <action name="actionGo_up">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/go-up.png</normaloff>:/pics/go-up.png</iconset>
+   </property>
+   <property name="text">
+    <string>Go up</string>
+   </property>
+   <property name="toolTip">
+    <string>Shows UP directory contents</string>
+   </property>
+   <property name="statusTip">
+    <string>Shows UP directory contents</string>
+   </property>
+   <property name="shortcut">
+    <string>Up</string>
+   </property>
+  </action>
+  <action name="actionGo_home">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/go-home.png</normaloff>:/pics/go-home.png</iconset>
+   </property>
+   <property name="text">
+    <string>Go home</string>
+   </property>
+   <property name="toolTip">
+    <string>Shows root directory contents</string>
+   </property>
+   <property name="statusTip">
+    <string>Shows root directory contents</string>
+   </property>
+   <property name="shortcut">
+    <string>Home</string>
+   </property>
+  </action>
+  <action name="actionOpenFile">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/pics/document-open.png</normaloff>:/pics/document-open.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open with external editor</string>
+   </property>
+   <property name="toolTip">
+    <string>Opens the file usinf external editor</string>
+   </property>
+   <property name="statusTip">
+    <string>Opens the file usinf external editor</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>DirTreeView</class>
+   <extends>QTreeView</extends>
+   <header>dirtreeview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>DirContentsTreeView</class>
+   <extends>QTreeView</extends>
+   <header>dircontentstreeview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>WaitView</class>
+   <extends>QWidget</extends>
+   <header>waitview.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>StatusBar</class>
+   <extends>QStatusBar</extends>
+   <header>statusbar.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="main.qrc"/>
+ </resources>
+ <connections/>
+</ui>

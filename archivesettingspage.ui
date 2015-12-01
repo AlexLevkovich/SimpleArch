@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ArchiveSettingsPage</class>
+ <widget class="QWidget" name="ArchiveSettingsPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QCheckBox" name="sortCheck">
+     <property name="text">
+      <string>Sort archive entries by the filename</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="treeCheck">
+     <property name="text">
+      <string>Show the folder tree</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="highlightCheck">
+     <property name="text">
+      <string>Highlight the focused view</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Rigth window's date format:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="dateCombo">
+       <item>
+        <property name="text">
+         <string>ISO</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>System</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Left window's icon size: </string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QComboBox" name="leftIconSizeCombo">
+       <item>
+        <property name="text">
+         <string>12 x 12</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>16 x 16</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>20 x 20</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>24 x 24</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>32 x 32</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>36 x 36</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>42 x 42</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>48 x 48</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Right window's icon size: </string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="rightIconSizeCombo">
+       <item>
+        <property name="text">
+         <string>12 x 12</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>16 x 16</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>20 x 20</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>24 x 24</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>32 x 32</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>36 x 36</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>42 x 42</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>48 x 48</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>253</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

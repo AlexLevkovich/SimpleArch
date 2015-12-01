@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/">
+        <file>pics/archive-extract.png</file>
+        <file>pics/archive-remove.png</file>
+        <file>pics/archive-insert.png</file>
+        <file>pics/document-new.png</file>
+        <file>pics/document-open.png</file>
+        <file>pics/document-save-as.png</file>
+        <file>pics/document-preview-archive.png</file>
+        <file>pics/document-properties.png</file>
+        <file>pics/application-exit.png</file>
+        <file>pics/edit-select-all.png</file>
+        <file>pics/configure.png</file>
+        <file>pics/utilities-file-archiver.png</file>
+        <file>pics/go-home.png</file>
+        <file>pics/go-next.png</file>
+        <file>pics/go-previous.png</file>
+        <file>pics/go-up.png</file>
+        <file>pics/encripted.png</file>
+        <file>pics/chronometer.png</file>
+        <file>pics/symlink.png</file>
+    </qresource>
+</RCC>

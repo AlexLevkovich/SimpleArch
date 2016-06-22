@@ -46,6 +46,8 @@ protected:
     void select_items(const QItemSelection & selection);
     void select_index(const QModelIndex & index);
     bool is_dir(const QModelIndex & index);
+    bool is_link(const QModelIndex & index);
+    char type(const QModelIndex & index);
     void contextMenuEvent(QContextMenuEvent * event);
     virtual bool isLeftView() const = 0;
     virtual bool isColumnVisible(int column) const = 0;

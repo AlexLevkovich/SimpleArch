@@ -213,6 +213,10 @@ bool FileTreeItem::is_link() const {
     return m_perms.startsWith("l");
 }
 
+char FileTreeItem::type() const {
+    return (m_perms.isEmpty())?' ':m_perms.at(0);
+}
+
 void FileTreeItem::appendChild(FileTreeItem *item) {
     m_childItems.append(item);
 }
@@ -235,6 +239,14 @@ int FileTreeItem::childIndex(const QString & name) const {
     FileTreeItem * p_this = (FileTreeItem *)this;
     for (int i=0;i<childCount();i++) {
         if (p_this->child(i)->name() == name) return i;
+    }
+    return -1;
+}
+
+int FileTreeItem::childIndex(const FileTreeItem * item) const {
+    FileTreeItem * p_this = (FileTreeItem *)this;
+    for (int i=0;i<childCount();i++) {
+        if (p_this->child(i)->name() == item->name() && p_this->child(i)->type() == item->type()) return i;
     }
     return -1;
 }

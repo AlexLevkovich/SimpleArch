@@ -23,6 +23,7 @@ public:
     FileTreeItem *child(int row);
     int childCount() const;
     int childIndex(const QString & name) const;
+    int childIndex(const FileTreeItem * item) const;
     int row() const;
     FileTreeItem *parentItem();
     void setParentItem(FileTreeItem * parent);
@@ -37,6 +38,7 @@ public:
     QDateTime date() const;
     bool is_dir() const;
     bool is_link() const;
+    char type() const;
     QIcon icon() const;
     bool isEncripted() const;
 

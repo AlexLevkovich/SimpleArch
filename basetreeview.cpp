@@ -266,20 +266,30 @@ void BaseTreeView::select_items(const QItemSelection & selection) {
     }
 }
 
-bool BaseTreeView::is_dir(const QModelIndex & _index) {
+char BaseTreeView::type(const QModelIndex & _index) {
     SortFilterProxyModel * proxyModel = (SortFilterProxyModel *)this->model();
-    if (proxyModel == NULL) return false;
+    if (proxyModel == NULL) return ' ';
     FileTreeModel * model = (FileTreeModel *)proxyModel->sourceModel();
-    if (model == NULL) return false;
+    if (model == NULL) return ' ';
 
     QModelIndex index = proxyModel->mapToSource(_index);
-    return model->index(index.row(),2,index.parent()).data().toString().startsWith("d");
+    QByteArray m_type = model->index(index.row(),2,index.parent()).data().toByteArray();
+    return m_type.isEmpty()?' ':m_type.at(0);
+}
+
+bool BaseTreeView::is_dir(const QModelIndex & _index) {
+    return type(_index) == 'd';
+}
+
+bool BaseTreeView::is_link(const QModelIndex & _index) {
+    return type(_index) == 'l';
 }
 
 void BaseTreeView::index_activated(const QModelIndex & index) {
     QModelIndex _index = ((SortFilterProxyModel *)model())->mapToSource(index);
     if (is_dir(index)) emit dir_activated(_index);
     else {
+        if (is_link(index)) return;
         QList<QAction *> actions = menu.actions();
         for (int i=0;i<actions.count();i++) {
             QAction * action = actions.at(i);

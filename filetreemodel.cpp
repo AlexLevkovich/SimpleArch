@@ -182,7 +182,7 @@ void FileTreeModel::findOrCreateFullPathOfItem(FileTreeItem * item) {
         }
     }
 
-    if (parent_item->childIndex(item->name()) < 0) {
+    if (parent_item->childIndex(item) < 0) {
         parent_item->appendChild(item);
         item->setParentItem(parent_item);
         prevImportedItem = item;

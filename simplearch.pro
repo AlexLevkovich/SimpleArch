@@ -1,4 +1,4 @@
-QT       += core gui declarative network
+QT       += core gui network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 isEmpty(INSTALL_PREFIX) {
@@ -9,11 +9,18 @@ isEmpty(TOOLS_PATH) {
     TOOLS_PATH = $$INSTALL_PREFIX/bin
 }
 
+TRANS_DIR1 = $$OUT_PWD/translations
+TRANS_DIR2 = $$INSTALL_PREFIX/share/youtubeviewer
+
+DEFINES += TRANS_DIR1=\\\"$$TRANS_DIR1\\\"
+DEFINES += TRANS_DIR2=\\\"$$TRANS_DIR2\\\"
 DEFINES += INSTALL_PREFIX=\\\"$$INSTALL_PREFIX\\\"
 DEFINES += TOOLS_PATH=\\\"$$TOOLS_PATH\\\"
 DEFINES += HAVE_GETPT
 CONFIG += link_pkgconfig
 PKGCONFIG += gobject-2.0 gio-2.0
+
+INCLUDEPATH += .
 
 lessThan(QT_MAJOR_VERSION, 5): {
 INCLUDEPATH += ./mimetypes
@@ -36,7 +43,6 @@ HEADERS     = \
     xziparchengine.h \
     lziparchengine.h \
     waitview.h \
-    busyindicator.h \
     lzip4archengine.h \
     complextararchengine.h \
     dragarchengine.h \
@@ -77,7 +83,8 @@ HEADERS     = \
     writeptyprocess.h \
     sequentialbuffer.h \
     process/unixprocess_p.h \
-    process/unixprocess.h
+    process/unixprocess.h \
+    updatearchengine.h
 
 RESOURCES   = \
     main.qrc
@@ -98,7 +105,6 @@ SOURCES     = \
     xziparchengine.cpp \
     lziparchengine.cpp \
     waitview.cpp \
-    busyindicator.cpp \
     lzip4archengine.cpp \
     complextararchengine.cpp \
     dragarchengine.cpp \
@@ -138,7 +144,8 @@ SOURCES     = \
     writeptyprocess.cpp \
     sequentialbuffer.cpp \
     process/unixprocess.cpp \
-    process/unixprocess_p.cpp
+    process/unixprocess_p.cpp \
+    updatearchengine.cpp
 
 lessThan(QT_MAJOR_VERSION, 5): {
         HEADERS += qtemporarydir.h
@@ -178,10 +185,33 @@ lessThan(QT_MAJOR_VERSION, 5): {
         RESOURCES += mimetypes/mimetypes.qrc
 }
 
+TRANSLATIONS = $$PWD/translations/simplearch_ru.ts \
+               $$PWD/translations/simplearch_be.ts
+
+LUPDATE = $$[QT_INSTALL_BINS]/lupdate -locations relative -no-sort
+LRELEASE = $$[QT_INSTALL_BINS]/lrelease
+
+updatets.files = TRANSLATIONS
+updatets.commands = $$LUPDATE $$PWD/simplearch.pro
+
+QMAKE_EXTRA_TARGETS += updatets
+
+updateqm.depends = updatets
+updateqm.input = TRANSLATIONS
+updateqm.output = translations/${QMAKE_FILE_BASE}.qm
+updateqm.commands = $$LRELEASE ${QMAKE_FILE_IN} -qm ${QMAKE_FILE_OUT}
+updateqm.name = LRELEASE ${QMAKE_FILE_IN}
+updateqm.variable_out = PRE_TARGETDEPS
+updateqm.CONFIG += no_link
+QMAKE_EXTRA_COMPILERS += updateqm
+
+qm.files = $$TRANS_DIR1/*.qm
+qm.path = $$INSTALL_ROOT/$$INSTALL_PREFIX/share/simplearch/
+qm.CONFIG += no_check_exist
 
 # install
-target.path = $$[QT_INSTALL_EXAMPLES]/widgets/itemviews/simpletreemodel
-INSTALLS += target 
+target.path = $$INSTALL_ROOT/$$INSTALL_PREFIX/bin/
+INSTALLS += target qm
 
 FORMS += \
     mainwindow.ui \
@@ -191,4 +221,4 @@ FORMS += \
     archivesettingspage.ui \
     compressionlevelssettingspage.ui
 
-DISTFILES +=
+

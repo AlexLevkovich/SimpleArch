@@ -443,7 +443,7 @@
     <string>Open with external editor</string>
    </property>
    <property name="toolTip">
-    <string>Opens the file usinf external editor</string>
+    <string>Opens the file using external editor</string>
    </property>
    <property name="statusTip">
     <string>Opens the file usinf external editor</string>

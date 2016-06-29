@@ -98,6 +98,7 @@ static QByteArray qt_prettyDebug(const char *data, int len, int maxSize)
 #include <QSemaphore>
 #include <QSocketNotifier>
 #include <QThread>
+#include <QTimer>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -637,6 +638,436 @@ inline pid_t qt_fork()
 Q_GLOBAL_STATIC(QMutex, cfbundleMutex);
 #endif
 
+void UnixProcessPrivate::Channel::clear()
+{
+    switch (type) {
+    case PipeSource:
+        Q_ASSERT(process);
+        process->stdinChannel.type = Normal;
+        process->stdinChannel.process = 0;
+        break;
+    case PipeSink:
+        Q_ASSERT(process);
+        process->stdoutChannel.type = Normal;
+        process->stdoutChannel.process = 0;
+        break;
+    }
+
+    type = Normal;
+    file.clear();
+    process = 0;
+}
+
+/*! \internal
+*/
+UnixProcessPrivate::UnixProcessPrivate()
+{
+    processChannel = UnixProcess::StandardOutput;
+    processChannelMode = UnixProcess::SeparateChannels;
+    processError = UnixProcess::UnknownError;
+    processState = UnixProcess::NotRunning;
+    pid = 0;
+    sequenceNumber = 0;
+    exitCode = 0;
+    exitStatus = UnixProcess::NormalExit;
+    startupSocketNotifier = 0;
+    deathNotifier = 0;
+    notifier = 0;
+    pipeWriter = 0;
+    childStartedPipe[0] = INVALID_Q_PIPE;
+    childStartedPipe[1] = INVALID_Q_PIPE;
+    deathPipe[0] = INVALID_Q_PIPE;
+    deathPipe[1] = INVALID_Q_PIPE;
+    exitCode = 0;
+    crashed = false;
+    dying = false;
+    emittedReadyRead = false;
+    emittedBytesWritten = false;
+#ifdef Q_OS_UNIX
+    serial = 0;
+#endif
+}
+
+/*! \internal
+*/
+UnixProcessPrivate::~UnixProcessPrivate()
+{
+    if (stdinChannel.process)
+        stdinChannel.process->stdoutChannel.clear();
+    if (stdoutChannel.process)
+        stdoutChannel.process->stdinChannel.clear();
+}
+
+/*! \internal
+*/
+
+void qDeleteInEventHandler(QObject *o);
+
+void UnixProcessPrivate::cleanup()
+{
+    q_func()->setProcessState(UnixProcess::NotRunning);
+    pid = 0;
+    sequenceNumber = 0;
+    dying = false;
+
+    if (stdoutChannel.notifier) {
+        stdoutChannel.notifier->setEnabled(false);
+        delete stdoutChannel.notifier;
+        stdoutChannel.notifier = 0;
+    }
+    if (stderrChannel.notifier) {
+        stderrChannel.notifier->setEnabled(false);
+        delete stderrChannel.notifier;
+        stderrChannel.notifier = 0;
+    }
+    if (stdinChannel.notifier) {
+        stdinChannel.notifier->setEnabled(false);
+        delete stdinChannel.notifier;
+        stdinChannel.notifier = 0;
+    }
+    if (startupSocketNotifier) {
+        startupSocketNotifier->setEnabled(false);
+        delete startupSocketNotifier;
+        startupSocketNotifier = 0;
+    }
+    if (deathNotifier) {
+        deathNotifier->setEnabled(false);
+        delete deathNotifier;
+        deathNotifier = 0;
+    }
+    if (notifier) {
+        delete notifier;
+        notifier = 0;
+    }
+    destroyPipe(stdoutChannel.pipe);
+    destroyPipe(stderrChannel.pipe);
+    destroyPipe(stdinChannel.pipe);
+    destroyPipe(childStartedPipe);
+    destroyPipe(deathPipe);
+#ifdef Q_OS_UNIX
+    serial = 0;
+#endif
+}
+
+/*! \internal
+*/
+bool UnixProcessPrivate::_q_canReadStandardOutput()
+{
+    Q_Q(UnixProcess);
+    qint64 available = bytesAvailableFromStdout();
+    if (available == 0) {
+        if (stdoutChannel.notifier)
+            stdoutChannel.notifier->setEnabled(false);
+        destroyPipe(stdoutChannel.pipe);
+#if defined UNIX_PROCESS_DEBUG
+        qDebug("UnixProcessPrivate::canReadStandardOutput(), 0 bytes available");
+#endif
+        return false;
+    }
+
+    if (!(processFlags & UnixProcess::RawStdout)) {
+        char *ptr = outputReadBuffer.reserve(available);
+        qint64 readBytes = readFromStdout(ptr, available);
+        if (readBytes == -1) {
+            processError = UnixProcess::ReadError;
+            q->setErrorString(UnixProcess::tr("Error reading from process"));
+            emit q->error(processError);
+#if defined UNIX_PROCESS_DEBUG
+            qDebug("UnixProcessPrivate::canReadStandardOutput(), failed to read from the process");
+#endif
+            return false;
+        }
+#if defined UNIX_PROCESS_DEBUG
+        qDebug("UnixProcessPrivate::canReadStandardOutput(), read %d bytes from the process' output",
+               int(readBytes));
+#endif
+
+        if (stdoutChannel.closed) {
+            outputReadBuffer.chop(readBytes);
+            return false;
+        }
+
+        outputReadBuffer.chop(available - readBytes);
+
+        bool didRead = false;
+        if (readBytes == 0) {
+            if (stdoutChannel.notifier)
+                stdoutChannel.notifier->setEnabled(false);
+        } else if (processChannel == UnixProcess::StandardOutput) {
+            didRead = true;
+            if (!emittedReadyRead) {
+                emittedReadyRead = true;
+                emit q->readyRead();
+                emittedReadyRead = false;
+            }
+        }
+        emit q->readyReadStandardOutput();
+        return didRead;
+    }
+    else {
+        if (!emittedReadyRead) {
+            emittedReadyRead = true;
+            emit q->readyRead();
+            emittedReadyRead = false;
+        }
+        emit q->readyReadStandardOutput();
+        return true;
+    }
+}
+
+/*! \internal
+*/
+bool UnixProcessPrivate::_q_canReadStandardError()
+{
+    Q_Q(UnixProcess);
+    qint64 available = bytesAvailableFromStderr();
+    if (available == 0) {
+        if (stderrChannel.notifier)
+            stderrChannel.notifier->setEnabled(false);
+        destroyPipe(stderrChannel.pipe);
+        return false;
+    }
+
+    char *ptr = errorReadBuffer.reserve(available);
+    qint64 readBytes = readFromStderr(ptr, available);
+    if (readBytes == -1) {
+        processError = UnixProcess::ReadError;
+        q->setErrorString(UnixProcess::tr("Error reading from process"));
+        emit q->error(processError);
+        return false;
+    }
+    if (stderrChannel.closed) {
+        errorReadBuffer.chop(readBytes);
+        return false;
+    }
+
+    errorReadBuffer.chop(available - readBytes);
+
+    bool didRead = false;
+    if (readBytes == 0) {
+        if (stderrChannel.notifier)
+            stderrChannel.notifier->setEnabled(false);
+    } else if (processChannel == UnixProcess::StandardError) {
+        didRead = true;
+        if (!emittedReadyRead) {
+            emittedReadyRead = true;
+            emit q->readyRead();
+            emittedReadyRead = false;
+        }
+    }
+    emit q->readyReadStandardError();
+    return didRead;
+}
+
+/*! \internal
+*/
+bool UnixProcessPrivate::_q_canWrite()
+{
+    Q_Q(UnixProcess);
+    if (processFlags & UnixProcess::RawStdin) {
+        if (stdinChannel.notifier)
+            stdinChannel.notifier->setEnabled(false);
+        isReadyWrite = true;
+        emit q->readyWrite();
+    }
+    else {
+        if (stdinChannel.notifier)
+            stdinChannel.notifier->setEnabled(false);
+
+        if (writeBuffer.isEmpty()) {
+#if defined UNIX_PROCESS_DEBUG
+            qDebug("UnixProcessPrivate::canWrite(), not writing anything (empty write buffer).");
+#endif
+            return false;
+        }
+
+        qint64 written = writeToStdin(writeBuffer.rawData(),
+                                      writeBuffer.size());
+        if (written < 0) {
+            destroyPipe(stdinChannel.pipe);
+            processError = UnixProcess::WriteError;
+            q->setErrorString(UnixProcess::tr("Error writing to process"));
+#if defined(UNIX_PROCESS_DEBUG)
+            qDebug("UnixProcessPrivate::canWrite(), failed to write (%s)", strerror(errno));
+#endif
+            emit q->error(processError);
+            return false;
+        }
+
+#if defined UNIX_PROCESS_DEBUG
+        qDebug("UnixProcessPrivate::canWrite(), wrote %d bytes to the process input", int(written));
+#endif
+
+        writeBuffer.free(written);
+        if (!emittedBytesWritten) {
+            emittedBytesWritten = true;
+            emit q->bytesWritten(written);
+            emittedBytesWritten = false;
+        }
+        if (stdinChannel.notifier && !writeBuffer.isEmpty())
+            stdinChannel.notifier->setEnabled(true);
+        if (writeBuffer.isEmpty() && stdinChannel.closed)
+            closeWriteChannel();
+    }
+    return true;
+}
+
+/*! \internal
+*/
+bool UnixProcessPrivate::_q_processDied()
+{
+#if defined UNIX_PROCESS_DEBUG
+    qDebug("UnixProcessPrivate::_q_processDied()");
+#endif
+#ifdef Q_OS_UNIX
+    if (!waitForDeadChild())
+        return false;
+#endif
+
+    // the process may have died before it got a chance to report that it was
+    // either running or stopped, so we will call _q_startupNotification() and
+    // give it a chance to emit started() or error(FailedToStart).
+    if (processState == UnixProcess::Starting) {
+        if (!_q_startupNotification())
+            return true;
+    }
+
+    return _q_notifyProcessDied();
+}
+
+bool UnixProcessPrivate::_q_notifyProcessDied()
+{
+    Q_Q(UnixProcess);
+#if defined UNIX_PROCESS_DEBUG
+    qDebug("UnixProcessPrivate::_q_notifyProcessDied()");
+#endif
+
+    if ( processFlags&UnixProcess::RawStdout ) {
+        qint64 bytes = bytesAvailableFromStdout();
+#if defined UNIX_PROCESS_DEBUG
+        qDebug() << "bytesAvailableFromStdout:" << bytes;
+#endif
+        // wait for all data to be read
+        if ( bytes > 0 ) {
+            QMetaObject::invokeMethod( q, "_q_notifyProcessDied", Qt::QueuedConnection );
+            return false;
+        }
+    }
+
+    if (dying) {
+        // at this point we know the process is dead. prevent
+        // reentering this slot recursively by calling waitForFinished()
+        // or opening a dialog inside slots connected to the readyRead
+        // signals emitted below.
+        return true;
+    }
+    dying = true;
+
+    // in case there is data in the pipe line and this slot by chance
+    // got called before the read notifications, call these two slots
+    // so the data is made available before the process dies.
+    if ( !processFlags.testFlag( UnixProcess::RawStdout ) ) {
+        _q_canReadStandardOutput();
+    }
+    _q_canReadStandardError();
+    findExitCode();
+
+    if (crashed) {
+        exitStatus = UnixProcess::CrashExit;
+        processError = UnixProcess::Crashed;
+        q->setErrorString(UnixProcess::tr("Process crashed"));
+        emit q->error(processError);
+    }
+
+    bool wasRunning = (processState == UnixProcess::Running);
+
+    cleanup();
+
+    if (wasRunning) {
+        // we received EOF now:
+        emit q->readChannelFinished();
+        // in the future:
+        //emit q->standardOutputClosed();
+        //emit q->standardErrorClosed();
+
+        emit q->finished(exitCode);
+        emit q->finished(exitCode, exitStatus);
+    }
+#if defined UNIX_PROCESS_DEBUG
+    qDebug("UnixProcessPrivate::_q_notifyProcessDied() process is dead");
+#endif
+    return true;
+}
+
+/*! \internal
+*/
+bool UnixProcessPrivate::_q_startupNotification()
+{
+    Q_Q(UnixProcess);
+#if defined UNIX_PROCESS_DEBUG
+    qDebug("UnixProcessPrivate::startupNotification()");
+#endif
+
+    if (startupSocketNotifier)
+        startupSocketNotifier->setEnabled(false);
+    if (processStarted()) {
+        q->setProcessState(UnixProcess::Running);
+        emit q->started();
+        return true;
+    }
+
+    q->setProcessState(UnixProcess::NotRunning);
+    processError = UnixProcess::FailedToStart;
+    emit q->error(processError);
+#ifdef Q_OS_UNIX
+    // make sure the process manager removes this entry
+    waitForDeadChild();
+    findExitCode();
+#endif
+    cleanup();
+    return false;
+}
+
+/*! \internal
+*/
+void UnixProcessPrivate::closeWriteChannel()
+{
+#if defined UNIX_PROCESS_DEBUG
+    qDebug("UnixProcessPrivate::closeWriteChannel()");
+#endif
+    if (stdinChannel.notifier) {
+        stdinChannel.notifier->setEnabled(false);
+        if (stdinChannel.notifier) {
+            delete stdinChannel.notifier;
+            stdinChannel.notifier = 0;
+        }
+    }
+    destroyPipe(stdinChannel.pipe);
+}
+
+qint64 UnixProcessPrivate::readData( char *data, qint64 maxlen, UnixProcess::ProcessChannel channel )
+{
+    if (processFlags&UnixProcess::RawStdout &&
+        channel == UnixProcess::StandardOutput) {
+        return readFromStdout(data, maxlen);
+    }
+    else {
+        SequentialBuffer *readBuffer = (channel == UnixProcess::StandardError)
+                                       ? &errorReadBuffer
+                                       : &outputReadBuffer;
+
+        qint64 readSoFar = readBuffer->read(data,maxlen);
+
+#if defined UNIX_PROCESS_DEBUG
+        qDebug("UnixProcess::readData(%p \"%s\", %lld) == %lld",
+               data, qt_prettyDebug(data, readSoFar, 16).constData(), maxlen, readSoFar);
+#endif
+        if (!readSoFar && processState == UnixProcess::NotRunning)
+            return -1;              // EOF
+        return readSoFar;
+    }
+}
+
 void UnixProcessPrivate::startProcess()
 {
     Q_Q(UnixProcess);
@@ -1140,7 +1571,7 @@ bool UnixProcessPrivate::waitForBytesWritten(int msecs)
 
         if (ret == 0) {
 	    processError = UnixProcess::Timedout;
-	    q->setErrorString(UnixProcess::tr("Process operation timed out"));
+        q->setErrorString(UnixProcess::tr("Process operation timed out"));
 	    return false;
 	}
 
@@ -1207,7 +1638,7 @@ bool UnixProcessPrivate::waitForFinished(int msecs)
         }
 	if (ret == 0) {
 	    processError = UnixProcess::Timedout;
-	    q->setErrorString(UnixProcess::tr("Process operation timed out"));
+        q->setErrorString(UnixProcess::tr("Process operation timed out"));
 	    return false;
 	}
 

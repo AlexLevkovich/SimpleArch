@@ -1,34 +1,92 @@
+/********************************************************************************
+** Created by: Alex Levkovich (alevkovich@tut.by)
+** License:    GPL
+********************************************************************************/
+
 #include "waitview.h"
+#include <QPaintEvent>
+#include <QPainter>
+#include <QApplication>
+#include <QPixmapCache>
 
-WaitView::WaitView(QWidget *parent) : QGraphicsView(parent) {
-    angle = 0;
+const double WaitView::m_innerRadius = 0.8;
+const double WaitView::m_outerRadius = 1.0;
+const double WaitView::m_size = 100.0;
 
-    m_busyIndicator.setBackgroundColor(palette().color(QPalette::Highlight));
-    m_busyIndicator.setForegroundColor(palette().color(QPalette::Base));
-    m_scene.addItem(dynamic_cast<QGraphicsItem*>(&m_busyIndicator));
-    m_scene.setSceneRect(0,0,m_busyIndicator.width(),m_busyIndicator.height());
+WaitView::WaitView(QWidget *parent) : QWidget(parent) {
+    angle = 360;
 
-    setScene(&m_scene);
-    setMinimumSize(m_busyIndicator.width(),m_busyIndicator.height());
+    m_backgroundColor = QApplication::palette().color(QPalette::Highlight);
+    m_foregroundColor = QApplication::palette().color(QPalette::Base);
+    m_actualInnerRadius = m_size*0.5*m_innerRadius;
+    m_actualOuterRadius = m_size*0.5*m_outerRadius;
 
-    connect(&m_timer,SIGNAL(timeout()),this,SLOT(rotateSpinner()));
+    setMinimumSize(m_size,m_size);
+    QPalette pal(palette());
+    pal.setColor(QPalette::Background,QApplication::palette().color(QPalette::Base));
+    setAutoFillBackground(true);
+    setPalette(pal);
+
+    connect(&m_timer,SIGNAL(timeout()),this,SLOT(changeAngle()));
 }
 
-void WaitView::rotateSpinner() {
-    qreal nTransX = m_busyIndicator.actualOuterRadius();
-    m_busyIndicator.setTransform(QTransform().translate(nTransX, nTransX).
-                                 rotate(angle).translate(-nTransX, -nTransX));
+void WaitView::changeAngle() {
+    angle -= 10;
+    if (angle == 0) angle = 360;
+    update((width()-m_size)*0.5,(height()-m_size)*0.5,m_size,m_size);
+}
 
-    angle += 10;
-    if (angle == 360) angle = 0;
+QPixmap WaitView::generatePixmap() const {
+    QString m_cacheKey = QString("%1").arg(angle);
+    QPixmap pixmap;
+    if (!QPixmapCache::find(m_cacheKey, &pixmap)) {
+        // Set up a convenient path
+        QPainterPath path;
+        path.setFillRule(Qt::OddEvenFill);
+        path.addEllipse(QPointF(m_actualOuterRadius,m_actualOuterRadius),m_actualOuterRadius,m_actualOuterRadius);
+        path.addEllipse(QPointF(m_actualOuterRadius,m_actualOuterRadius),m_actualInnerRadius,m_actualInnerRadius);
+
+        double nActualDiameter = 2 * m_actualOuterRadius;
+        pixmap = QPixmap(nActualDiameter,nActualDiameter);
+        pixmap.fill(Qt::transparent);
+        QPainter p(&pixmap);
+
+        // Draw the ring background
+        p.setPen(Qt::NoPen);
+        p.setBrush(m_backgroundColor);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.drawPath(path);
+
+        // Draw the ring foreground
+        QConicalGradient gradient(QPointF(m_actualOuterRadius,m_actualOuterRadius),angle);
+        gradient.setColorAt(0.0,Qt::transparent);
+        gradient.setColorAt(0.05,m_foregroundColor);
+        gradient.setColorAt(0.8,Qt::transparent);
+        p.setBrush(gradient);
+        p.drawPath(path);
+        p.end();
+
+        QPixmapCache::insert(m_cacheKey,pixmap);
+    }
+
+    return pixmap;
+}
+
+void WaitView::paintEvent(QPaintEvent *event) {
+    QRect pixmapRect((width()-m_size)*0.5,(height()-m_size)*0.5,m_size,m_size);
+    if (!event->rect().intersects(pixmapRect)) return;
+
+    QPainter painter(this);
+    painter.drawPixmap(pixmapRect.x(),pixmapRect.y(),generatePixmap());
+    painter.end();
 }
 
 void WaitView::showEvent(QShowEvent * event) {
-    QGraphicsView::showEvent(event);
+    QWidget::showEvent(event);
     m_timer.start(50);
 }
 
 void WaitView::hideEvent(QHideEvent * event) {
-    QGraphicsView::hideEvent(event);
+    QWidget::hideEvent(event);
     m_timer.stop();
 }

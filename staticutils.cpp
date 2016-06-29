@@ -15,7 +15,9 @@
 #include "waitdialog.h"
 #include "folderchooser.h"
 #include "extractarchengine.h"
+#include "updatearchengine.h"
 #include <QTemporaryFile>
+#include <QUrl>
 
 #define CANT_FIND_ENGINE "Cannot find a suitable engine to open %1 file!"
 //#define DEV_SHM          "/dev/shm"
@@ -139,6 +141,21 @@ bool StaticUtils::createArchive(const QStringList & items) {
     return ret;
 }
 
+bool StaticUtils::addToArchive(const QString & fileName,const QStringList & items) {
+    BaseArchEngine * engine = BaseArchEngine::findEngine(fileName,NULL);
+    if (engine == NULL) {
+        QMessageBox::critical(NULL,QObject::tr("Error!!!"),QObject::tr(CANT_FIND_ENGINE).arg(engine->fileName()));
+        return false;
+    }
+    WaitDialog wait_dlg(QObject::tr("Appending the files to %1").arg(engine->fileName())+"...",NULL);
+    wait_dlg.show();
+    QObject::connect(engine,SIGNAL(error(const QString &)),&wait_dlg,SLOT(show_error(const QString &)));
+    bool ret = UpdateArchEngine(engine,items,false).exec();
+
+    delete engine;
+    return ret;
+}
+
 bool StaticUtils::extractArchive(const QString & fileName,const QString & _toDir) {
     if (!QFileInfo(fileName).exists()) return false;
 
@@ -167,6 +184,16 @@ bool StaticUtils::extractArchive(const QString & fileName,const QString & _toDir
 
     delete engine;
     return ret;
+}
+
+const QString StaticUtils::urlOrLocalPath(const QString & url_or_path) {
+    QUrl url(url_or_path);
+    if (!url.isValid()) return url_or_path;
+    return url.toLocalFile();
+}
+
+const QString StaticUtils::urlOrLocalPath(const char * url_or_path) {
+    return urlOrLocalPath(QString::fromLocal8Bit(url_or_path));
 }
 
 const QString StaticUtils::tempFileName(bool autoRemove) {

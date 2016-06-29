@@ -222,13 +222,13 @@ void FileTreeItem::appendChild(FileTreeItem *item) {
 }
 
 bool FileTreeItem::insertChild(FileTreeItem *item,uint pos) {
-    if (pos > childCount()) return false;
+    if (pos > (uint)childCount()) return false;
     m_childItems.insert(pos,item);
     return true;
 }
 
 bool FileTreeItem::removeChild(uint pos) {
-    if (pos >= childCount()) return false;
+    if (pos >= (uint)childCount()) return false;
     FileTreeItem * childItem = child(pos);
     m_childItems.removeAt(pos);
     delete childItem;

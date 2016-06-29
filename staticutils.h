@@ -18,8 +18,11 @@ public:
     static void simplifyRight(QString & str);
     static bool createArchive(const QStringList & items);
     static bool extractArchive(const QString & fileName,const QString & toDir);
+    static bool addToArchive(const QString & fileName,const QStringList & items);
     static const QString tempFileName(bool autoRemove = false);
     static void mimeOpen(const QString & filePath);
+    static const QString urlOrLocalPath(const QString & url_or_path);
+    static const QString urlOrLocalPath(const char* url_or_path);
 };
 
 #endif // STATICUTILS_H
